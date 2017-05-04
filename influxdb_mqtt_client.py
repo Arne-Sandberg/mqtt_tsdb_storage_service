@@ -28,6 +28,7 @@ from mqtt_client import MqttClient
 from influxdb import InfluxDBClient
 import logging
 import requests
+from requests.auth import HTTPBasicAuth
 import json
 
 #Constants
@@ -38,6 +39,7 @@ class InfluxdbMqttClient(MqttClient):
     def __init__(self, mqtt_server, rest_server, influx_server):
         self.influx_client = InfluxDBClient(influx_server.host, influx_server.port, influx_server.user, influx_server.password, INFLUX_DATABASE)
         self.rest_server = rest_server
+        self.auth = HTTPBasicAuth(rest_server.user, rest_server.password)
         self.devices = dict()
         MqttClient.__init__(self, mqtt_server)
 
@@ -78,7 +80,7 @@ class InfluxdbMqttClient(MqttClient):
             ##TODO: Catch exceptions and log them
             url = self.rest_server.host + "/device/"+device_id
             try:
-                res = requests.get(url)
+                res = requests.get(url, self.auth)
                 if(res.ok):
                     device = res.json()
                     self.devices[device_id] = device
@@ -105,7 +107,7 @@ class InfluxdbMqttClient(MqttClient):
         url = self.rest_server.host + "/device/"+device["id"]+"/transducer"
         data = json.dumps({"name" : transducer_name})
         #TODO: catch exceptions and log them
-        response = requests.post(url, data)
+        response = requests.post(url, data, self.auth)
         if(response.ok):
             logging.info("Transducer created ")
         else:
