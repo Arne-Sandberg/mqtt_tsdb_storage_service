@@ -86,10 +86,10 @@ class InfluxdbMqttClient(MqttClient):
                     self.devices[device_id] = device
                     return device
             except ConnectionError as ce:
-                logging.warn("Connection error " + str(ce))
+                logging.warning("Connection error " + str(ce))
                 return 
             except requests.exceptions.RequestException as re:
-                logging.warn("RequestException " + str(re))
+                logging.warning("RequestException " + str(re))
                 return
 
         else:

@@ -40,7 +40,7 @@ Server = namedtuple('Server', ['host', 'port','user','password'])
 
 #Define stop action
 def signal_handler(signal, frame):
-    print('Stopping service daemon')
+    logging.info('Received kill signal ..Stopping service daemon')
     if "service" in globals():
         reactor.stop()
         service.stop()
@@ -63,7 +63,7 @@ class ServiceDaemon():
         reactor.run() #Keeps the process running forever
 
     def handle_error(self, failure):
-        print(failure.getBriefTraceback())
+        logging.error(failure.getBriefTraceback())
         reactor.stop()
         service.stop()
 
