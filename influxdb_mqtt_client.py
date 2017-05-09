@@ -78,7 +78,6 @@ class InfluxdbMqttClient(MqttClient):
 
     def get_device(self, device_id):
         if device_id not in self.devices:
-            ##TODO: Catch exceptions and log them
             url = str(self.rest_server.host + "/device/"+ device_id)
             logging.info("Connecting  to "+url)
             try:
@@ -90,11 +89,11 @@ class InfluxdbMqttClient(MqttClient):
                 else:
                     logging.info("Error response "+ str(res.status_code))
             except ConnectionError as ce:
-                logging.exception("Connection error ")
+                logging.exception("Connection error : " + url)
                 logging.exception(ce)
                 return 
             except requests.exceptions.RequestException as re:
-                logging.exception("RequestException ")
+                logging.exception("RequestException :" + url)
                 logging.exception(re)
                 return
 
@@ -114,12 +113,19 @@ class InfluxdbMqttClient(MqttClient):
         data = {}
         data['name'] = transducer_name;
         data['properties'] = {"created_by":"OpenChirp Influxdb Storage service"} 
-        #TODO: catch exceptions and log them
-        response = requests.post(url, data = data, auth = self.auth)
-        if(response.ok):
-            logging.info("Transducer created ")
-        else:
-            logging.info("Error in creating transducer : HTTP code : "+ str(response.status_code) + " Content : "+ str(response.json()))
-
+        try:
+            response = requests.post(url, data = data, auth = self.auth)
+            if(response.ok):
+                logging.info("Transducer created ")
+            else:
+                logging.info("Error in creating transducer : HTTP code : "+ str(response.status_code) + " Content : "+ str(response.json()))
+        except ConnectionError as ce:
+                logging.exception("Connection error : " + url)
+                logging.exception(ce)
+                return 
+        except requests.exceptions.RequestException as re:
+                logging.exception("RequestException : "+ url)
+                logging.exception(re)
+                return
 
 
