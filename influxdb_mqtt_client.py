@@ -107,9 +107,30 @@ class InfluxdbMqttClient(MqttClient):
         for item in transducers:
             if(item["name"].lower() == transducer_name):
                 return item
+        # Reload transducers before creating one
 
-        logging.info("About to create transducer "+transducer_name + " on device "+device["id"])        
         url = self.rest_server.host + "/device/"+device["id"]+"/transducer"
+        try:
+            response = requests.get(url, auth = self.auth)
+            if(response.ok):
+                transducers = response.json()
+                for item in transducers:
+                    if(item["name"].lower() == transducer_name):
+                        return item
+
+            else:
+                logging.info("Error in getting transducers "+ str(response.status_code))
+                return
+        except ConnectionError as ce:
+            logging.exception("Connection error :" +url)
+            logging.exception(ce)
+            return
+        except requests.exceptions.RequestException as re:
+            logging.exception("RequestsException :" +url)
+            logging.exception(re)
+            return
+
+        logging.info("About to create transducer "+transducer_name +" on device "+ device["id"])    
         data = {}
         data['name'] = transducer_name;
         data['properties'] = {"created_by":"OpenChirp Influxdb Storage service"} 
