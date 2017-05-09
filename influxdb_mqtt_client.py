@@ -54,17 +54,18 @@ class InfluxdbMqttClient(MqttClient):
         for msg in messages:
             words = msg.topic.split('/')
             if(len(words) < 4):
-                logging.info("Skipping message: " + str(msg))
+                logging.info("Skipping message: " + str(msg.topic) +" : "+str(msg.payload))
                 continue
 
             # TODO add check to see if the payload is json ..
             device_id = words[2]
             transducer_name = words[4]
             device = self.get_device(device_id)
-            self.get_or_create_transducer(device, transducer_name)
             if device is None:
                 logging.info("Skipping message "+ str(msg)+" because could not find a device with id :" + device_id)
                 continue
+            transducer_name = transducer_name.lower()
+            self.get_or_create_transducer(device, transducer_name)
             point = {
             "measurement":  device_id+"_"+transducer_name,
             "fields": {
@@ -78,18 +79,23 @@ class InfluxdbMqttClient(MqttClient):
     def get_device(self, device_id):
         if device_id not in self.devices:
             ##TODO: Catch exceptions and log them
-            url = self.rest_server.host + "/device/"+device_id
+            url = str(self.rest_server.host + "/device/"+ device_id)
+            logging.info("Connecting  to "+url)
             try:
-                res = requests.get(url, self.auth)
+                res = requests.get(url, auth = self.auth)
                 if(res.ok):
                     device = res.json()
                     self.devices[device_id] = device
                     return device
+                else:
+                    logging.info("Error response "+ str(res.status_code))
             except ConnectionError as ce:
-                logging.warning("Connection error " + str(ce))
+                logging.exception("Connection error ")
+                logging.exception(ce)
                 return 
             except requests.exceptions.RequestException as re:
-                logging.warning("RequestException " + str(re))
+                logging.exception("RequestException ")
+                logging.exception(re)
                 return
 
         else:
@@ -100,14 +106,16 @@ class InfluxdbMqttClient(MqttClient):
     def get_or_create_transducer(self, device, transducer_name):
         transducers = device["transducers"]
         for item in transducers:
-            if(item["name"].lower() == transducer_name.lower()):
+            if(item["name"].lower() == transducer_name):
                 return item
 
         logging.info("About to create transducer "+transducer_name + " on device "+device["id"])        
         url = self.rest_server.host + "/device/"+device["id"]+"/transducer"
-        data = json.dumps({"name" : transducer_name})
+        data = {}
+        data['name'] = transducer_name;
+        data['properties'] = {"created_by":"OpenChirp Influxdb Storage service"} 
         #TODO: catch exceptions and log them
-        response = requests.post(url, data, self.auth)
+        response = requests.post(url, data = data, auth = self.auth)
         if(response.ok):
             logging.info("Transducer created ")
         else:
