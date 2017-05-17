@@ -45,7 +45,7 @@ class InfluxdbMqttClient(MqttClient):
 
     def get_topics(self):
         topics = list()
-        topics.append('/devices/+/transducer/#')
+        topics.append('openchirp/devices/+/transducer/#')
         return topics
 
     def process_messages(self):
@@ -53,7 +53,7 @@ class InfluxdbMqttClient(MqttClient):
         points = list()
         for msg in messages:
             words = msg.topic.split('/')
-            if(len(words) < 4):
+            if(len(words) < 5):
                 logging.info("Skipping message: " + str(msg.topic) +" : "+str(msg.payload))
                 continue
 
