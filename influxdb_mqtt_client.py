@@ -73,8 +73,11 @@ class InfluxdbMqttClient(MqttClient):
                 }
             }
             points.append(point)
-
-        self.influx_client.write_points( points, time_precision='s', batch_size = 5000)
+        try:
+            self.influx_client.write_points( points, time_precision='s', batch_size = 5000)
+        except influxdb.exceptions.InfluxDBClientError as ie:
+            logging.exception("Error in writing to influxdb")
+            logging.exception(ie)
 
     def get_device(self, device_id):
         if device_id not in self.devices:
