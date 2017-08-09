@@ -43,12 +43,11 @@ class MqttClient():
             client.subscribe(topic)
 
     def on_message(self, client, userdata, msg):
-        logging.info('Received message on mqtt client ' +msg.topic+' '+str(msg.payload))
         self.mqttMessageBuffer.append(msg)
 
     def __init__(self, mqtt_server):
         logging.info('MqttClient : Init')
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(client_id="mtss_service")
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.username_pw_set(mqtt_server.user, mqtt_server.password)
