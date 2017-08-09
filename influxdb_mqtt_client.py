@@ -106,6 +106,7 @@ class InfluxdbMqttClient(MqttClient):
 
     # This method creates the transducer if it does not exist
     def get_or_create_transducer(self, device, transducer_name):
+        deviceId = device["id"]
         transducers = device["transducers"]
         for item in transducers:
             if(item["name"].lower() == transducer_name):
@@ -117,6 +118,8 @@ class InfluxdbMqttClient(MqttClient):
             response = requests.get(url, auth = self.auth)
             if(response.ok):
                 transducers = response.json()
+                # Update cache
+                self.devices[deviceId]["transducers"] = transducers
                 for item in transducers:
                     if(item["name"].lower() == transducer_name):
                         return item
