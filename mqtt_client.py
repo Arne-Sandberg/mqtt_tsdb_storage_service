@@ -67,10 +67,10 @@ class MqttClient():
         # The derived class should override this method.
         pass
 
-    def publish(self, msg):
-        logging.info('MqttClient: publishing message '+ str(msg))
+    def publish(self, topic, payload ):
+       #logging.info('MqttClient: publishing message '+topic+':' + payload )
         #self.client.publish(msg["topic"], msg["message"], retain = True)
-        self.client.publish(msg["topic"], msg["message"])
+        self.client.publish(topic, payload)
 
     def stop(self):
         logging.info('Disconnecting MqttClient')

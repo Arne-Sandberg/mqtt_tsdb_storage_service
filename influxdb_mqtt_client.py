@@ -36,17 +36,26 @@ INFLUX_DATABASE = 'openchirp'
 
 class InfluxdbMqttClient(MqttClient):
 
-    def __init__(self, mqtt_server, rest_server, influx_server):
+    def __init__(self, service_id, mqtt_server, rest_server, influx_server):
+        self.service_id = service_id
         self.influx_client = InfluxDBClient(influx_server.host, influx_server.port, influx_server.user, influx_server.password, INFLUX_DATABASE)
         self.rest_server = rest_server
         self.auth = HTTPBasicAuth(rest_server.user, rest_server.password)
         self.devices = dict()
+        self.pointsWritten = 0
         MqttClient.__init__(self, mqtt_server)
 
     def get_topics(self):
         topics = list()
         topics.append('openchirp/devices/+/transducer/#')
         return topics
+
+    def publish_status(self):
+        status = dict()
+        status["message"] = "Points written in the last 10 minutes : "+ str(self.pointsWritten)
+        topic = 'openchirp/services/'+ str(self.service_id) +'/status'
+        self.publish(topic, str(status))
+        self.pointsWritten = 0
 
     def process_messages(self):
         messages = self.grab_cached_messages()
@@ -75,6 +84,7 @@ class InfluxdbMqttClient(MqttClient):
             points.append(point)
         try:
             self.influx_client.write_points( points, time_precision='s', batch_size = 5000)
+            self.pointsWritten += len(points)
         except influxdb.exceptions.InfluxDBClientError as ie:
             logging.exception("Error in writing to influxdb")
             logging.exception(ie)

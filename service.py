@@ -51,15 +51,20 @@ class ServiceDaemon():
     def run(self):
         conf = common.parse_arguments()
         logging.basicConfig(filename=conf['log_file'],level=logging.INFO)
-        mqtt_server = Server(conf['mqtt_broker'], '1883', conf['mqtt_broker_user'], conf['mqtt_broker_password'])
+        mqtt_server = Server(conf['mqtt_broker'], '1883', conf['service_id'], conf['password'])
         influxdb_server = Server(conf['influxdb_host'], conf['influxdb_port'], conf['influxdb_user'], conf['influxdb_password'])
-        rest_server = Server(conf['rest_url'], '', conf['rest_user'], conf['rest_password'])
+        rest_server = Server(conf['rest_url'], '', conf['service_id'], conf['password'])
         global service
-        service =  InfluxdbMqttClient(mqtt_server, rest_server, influxdb_server)
+        service =  InfluxdbMqttClient(conf['service_id'], mqtt_server, rest_server, influxdb_server)
 
-        loopTask = task.LoopingCall(service.process_messages)
-        loopDeferred = loopTask.start(1.0) #call every second
-        loopDeferred.addErrback(self.handle_error)
+        loopTask1 = task.LoopingCall(service.process_messages)
+        loopDeferred1 = loopTask1.start(1.0) #process messages every second
+        loopDeferred1.addErrback(self.handle_error)
+
+        loopTask2 = task.LoopingCall(service.publish_status)
+        loopDeferred2 = loopTask2.start(600.0) #Publish status every 10 minutes 
+        loopDeferred2.addErrback(self.handle_error)
+
         reactor.run() #Keeps the process running forever
 
     def handle_error(self, failure):
