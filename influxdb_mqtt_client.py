@@ -54,7 +54,7 @@ class InfluxdbMqttClient(MqttClient):
         status = dict()
         status["message"] = "Points written in the last 10 minutes : "+ str(self.pointsWritten)
         topic = 'openchirp/services/'+ str(self.service_id) +'/status'
-        self.publish(topic, str(status))
+        self.publish(topic, json.dumps(status))
         self.pointsWritten = 0
 
     def process_messages(self):
